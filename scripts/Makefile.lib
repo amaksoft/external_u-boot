@@ -419,7 +419,7 @@ $(obj)/%_efi.S: $(obj)/%.efi
 
 quiet_cmd_efi_objcopy = OBJCOPY $@
 cmd_efi_objcopy = $(OBJCOPY) -j .header -j .text -j .sdata -j .data -j \
-		.dynamic -j .dynsym  -j .rel* -j .rela* -j .reloc \
+		.dynamic -j .dynsym -j .dynstr -j .rel* -j .rela* -j .reloc \
 		$(if $(EFI_TARGET),$(EFI_TARGET),-O binary) $^ $@
 
 $(obj)/%.efi: $(obj)/%_efi.so
