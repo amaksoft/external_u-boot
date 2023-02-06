@@ -187,7 +187,11 @@ uint32_t __efi_runtime crc32_no_comp(uint32_t crc, const Bytef *buf, uInt len)
 #ifdef CONFIG_ARM64_CRC32
     crc = cpu_to_le32(crc);
     while (len--)
+#if defined(__clang__)
+        crc = __builtin_arm_crc32b(crc, *buf++);
+#else
         crc = __builtin_aarch64_crc32b(crc, *buf++);
+#endif
     return le32_to_cpu(crc);
 #else
     const uint32_t *tab = crc_table;

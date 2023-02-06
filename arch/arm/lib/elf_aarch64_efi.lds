@@ -25,12 +25,11 @@ SECTIONS
 		*(.srodata)
 		*(.rodata*)
 		. = ALIGN(16);
-		*(.dynamic);
-		. = ALIGN(512);
 	}
 	_etext = .;
 	_text_size = . - _text;
 	. = ALIGN(4096);
+	.dynamic  : { *(.dynamic) }
 	.data : {
 		_data = .;
 		*(.sdata)
