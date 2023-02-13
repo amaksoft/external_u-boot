@@ -13,6 +13,8 @@
 #include <part.h>
 #include <stdlib.h>
 
+#define FASTBOOT_SET_ACTIVE_CMD_ENV "fastboot_set_active_cmd"
+
 /**
  * image_size - final fastboot image size
  */
@@ -36,6 +38,7 @@ static void erase(char *, char *);
 static void reboot_bootloader(char *, char *);
 static void reboot_fastbootd(char *, char *);
 static void reboot_recovery(char *, char *);
+static void set_active(char *, char *);
 static void oem_format(char *, char *);
 static void oem_partconf(char *, char *);
 static void oem_bootbus(char *, char *);
@@ -88,7 +91,7 @@ static const struct {
 	},
 	[FASTBOOT_COMMAND_SET_ACTIVE] =  {
 		.command = "set_active",
-		.dispatch = okay
+		.dispatch = set_active
 	},
 	[FASTBOOT_COMMAND_OEM_FORMAT] = {
 		.command = "oem format",
@@ -413,6 +416,24 @@ static void reboot_recovery(char *cmd_parameter, char *response)
 		fastboot_fail("Cannot set recovery flag", response);
 	else
 		fastboot_okay(NULL, response);
+}
+
+/**
+ * set_active() - Set active partition set
+ * @cmd_parameter: Pointer to command parameter
+ * @response: Pointer to fastboot response buffer
+ */
+static void set_active(char *cmd_parameter, char *response)
+{
+	if (!env_get(FASTBOOT_SET_ACTIVE_CMD_ENV)) {
+		fastboot_fail("command is not configured", response);
+	} else {
+		if (run_command(env_get(FASTBOOT_SET_ACTIVE_CMD_ENV), 0)) {
+			fastboot_fail("", response);
+		} else {
+			fastboot_okay(NULL, response);
+		}
+	}
 }
 
 /**
