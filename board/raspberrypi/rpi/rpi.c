@@ -27,6 +27,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#define ENV_RPI_BOOT_DEV "rpi_boot_dev"
+#define ENV_RPI_BOOT_PART "rpi_boot_part"
+#define ENV_RPI_BOOT_DEV_PART "rpi_boot_dev_part"
+
 /* Assigned in lowlevel_init.S
  * Push the variable into the .data section so that it
  * does not get cleared later.
@@ -63,6 +67,23 @@ struct msg_get_clock_rate {
 	struct bcm2835_mbox_tag_get_clock_rate get_clock_rate;
 	u32 end_tag;
 };
+
+/*
+ * https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#BOOT_ORDER
+ */
+typedef enum: uint32_t {
+	BOOT_MODE_SD_CARD_SELECT = 0x0,
+	BOOT_MODE_SD_CARD = 0x1,
+	BOOT_MODE_NETWORK = 0x2,
+	BOOT_MODE_RPIBOOT = 0x3,
+	BOOT_MODE_USB_MSD = 0x4,
+	BOOT_MODE_BCM_USB_MSD = 0x5,
+	BOOT_MODE_NVME = 0x6,
+	BOOT_MODE_HTTP = 0x7,
+	BOOT_MODE_STOP = 0xe,
+	BOOT_MODE_RESTART = 0xf,
+	BOOT_MODE_UNKNOWN = 0xffffffff
+} rpi_boot_mode_t;
 
 #ifdef CONFIG_ARM64
 #define DTB_DIR "broadcom/"
@@ -265,6 +286,9 @@ static uint32_t revision;
 static uint32_t rev_scheme;
 static uint32_t rev_type;
 static const struct rpi_model *model;
+static uint32_t boot_dev = 0;
+static uint32_t boot_part = -1;
+static char boot_dev_part[24] = { 0 };
 
 int dram_init(void)
 {
@@ -410,6 +434,18 @@ static void set_serial_number(void)
 	env_set("serial#", serial_string);
 }
 
+static void set_boot_dev_part(void) {
+	if (boot_part < 0) {
+		return;
+	}
+	char buf[12];
+	sprintf(buf, "%d", boot_part);
+	env_set(ENV_RPI_BOOT_PART, buf);
+	sprintf(buf, "%d", boot_dev);
+	env_set(ENV_RPI_BOOT_DEV, buf);
+	env_set(ENV_RPI_BOOT_DEV_PART, boot_dev_part);
+}
+
 int misc_init_r(void)
 {
 	set_fdt_addr();
@@ -419,6 +455,7 @@ int misc_init_r(void)
 	set_board_info();
 #endif
 	set_serial_number();
+	set_boot_dev_part();
 
 	return 0;
 }
@@ -476,6 +513,32 @@ static void get_board_revision(void)
 	printf("RPI %s (0x%x)\n", model->name, revision);
 }
 
+static void get_boot_dev_partition(void)
+{
+	void *fw_fdt = (void *)fw_dtb_pointer;
+	uint32_t boot_mode =
+		fdt_getprop_u32_default(fw_fdt, "/chosen/bootloader", "boot-mode", BOOT_MODE_UNKNOWN);
+	if (boot_mode != BOOT_MODE_SD_CARD_SELECT || boot_mode == BOOT_MODE_SD_CARD) {
+		return; // eeprom have booted u-boot not from SD card
+	}
+	/*
+ 	 * Provide FAT boot device and partition based on device tree
+ 	 * values dynamically
+ 	 * Refrence:
+ 	 * https://www.raspberrypi.com/documentation/computers/config_txt.html
+ 	 *      #example-update-flow-for-ab-booting
+ 	 */
+	uint32_t partition =
+		fdt_getprop_u32_default(fw_fdt, "/chosen/bootloader", "partition", -1);
+	if (partition < 0) {
+		printf("RPI: failed to read /chosen/bootloader/partition");
+	} else {
+		boot_part = partition;
+		sprintf(boot_dev_part, "%d:%d", boot_dev, boot_part);
+		printf("RPI: booted from %s\n", boot_dev_part);
+	}
+}
+
 int board_init(void)
 {
 #ifdef CONFIG_HW_WATCHDOG
@@ -483,6 +546,7 @@ int board_init(void)
 #endif
 
 	get_board_revision();
+	get_boot_dev_partition();
 
 	gd->bd->bi_boot_params = 0x100;
 
@@ -516,6 +580,11 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	efi_add_memory_map(0, CONFIG_RPI_EFI_NR_SPIN_PAGES << EFI_PAGE_SHIFT,
 			   EFI_RESERVED_MEMORY_TYPE);
 #endif
-
 	return 0;
+}
+
+
+char *env_fat_get_dev_part(void)
+{
+	return boot_dev_part;
 }
