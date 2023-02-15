@@ -127,6 +127,8 @@ obj-$(CONFIG_LIB_UUID) += uuid.o
 obj-$(CONFIG_LIB_RAND) += rand.o
 obj-y += panic.o
 
+obj-$(CONFIG_INI_PARSER) += ini.o
+
 ifeq ($(CONFIG_$(SPL_TPL_)BUILD),y)
 # SPL U-Boot may use full-printf, tiny-printf or none at all
 ifdef CONFIG_$(SPL_TPL_)USE_TINY_PRINTF

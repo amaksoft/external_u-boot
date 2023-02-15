@@ -1074,3 +1074,44 @@ menu "FWU Multi Bank Updates"
 source lib/fwu_updates/Kconfig
 
 endmenu
+
+menu "INI file parsing support"
+
+config INI_PARSER
+	bool "Enable INI file parser"
+	default n
+	help
+	  inih -- simple .INI file parser
+	  Go to the project home page for more info:
+	  http://code.google.com/p/inih/
+
+config INI_PARSER_MAX_LINE
+	int "Maximum ini file line length"
+	depends on INI_PARSER
+	default "200"
+	help
+	  Maximum ini file line length.
+
+config INI_PARSER_MAX_SECTION
+	int "Maximum ini file section name length"
+	depends on INI_PARSER
+	default "50"
+	help
+	  Enable the bootcount command, which allows interrogation and
+	  reset of the bootcounter.
+
+config INI_PARSER_MAX_NAME
+	int "Maximum ini file config entry name length"
+	depends on INI_PARSER
+	default "50"
+	help
+	  Maximum ini file config entry name length.
+
+config INI_PARSER_ALLOW_MULTILINE
+	bool "Enable multiline ini file entries parsing"
+	depends on INI_PARSER
+	default y
+	help
+	  Enable multiline ini file entries parsing.
+
+endmenu

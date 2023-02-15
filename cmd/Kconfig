@@ -1913,6 +1913,20 @@ endif
 
 menu "Misc commands"
 
+config CMD_INI
+	bool "Enable 'ini' command"
+	depends on INI_PARSER
+	default y
+	help
+	  Enables an ini command for parsing INI files
+
+config CMD_INI_CASE_INSENSITIVE
+	bool "Enable case insensitive ini file parsing for 'ini' command"
+	depends on CMD_INI
+	default n
+	help
+	  Enable case insensitive ini file parsing for ini command.
+
 config CMD_BMP
 	bool "Enable 'bmp' command"
 	depends on VIDEO
